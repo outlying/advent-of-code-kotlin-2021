@@ -6,12 +6,11 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation("com.google.truth:truth:1.1.3")
+}
+
 tasks {
-    sourceSets {
-        main {
-            java.srcDirs("src")
-        }
-    }
 
     wrapper {
         gradleVersion = "7.3"
