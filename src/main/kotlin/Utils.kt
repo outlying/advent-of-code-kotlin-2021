@@ -3,6 +3,21 @@ import java.math.BigInteger
 import java.security.MessageDigest
 
 
+fun Array<IntArray>.print(replaceWith: (Int) -> Any = { it }) {
+
+    val builder = StringBuilder()
+
+    for(x in 0 until size){
+        for(y in 0 until get(0).size) {
+            builder.append(replaceWith.invoke(get(x)[y]))
+            builder.append("\t")
+        }
+        builder.append("\n")
+    }
+
+    println(builder)
+}
+
 fun <T> List<List<T>>.transpose(): List<List<T>> {
     val row = size
     val column = get(0).size
