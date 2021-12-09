@@ -1,3 +1,4 @@
+import com.google.common.truth.Truth
 import readInput
 
 fun main() {
@@ -10,7 +11,8 @@ fun main() {
     }
 
     val testInput = readInput("Day00_test")
-    check(part1(testInput) == 0)
+    Truth.assertThat(part1(testInput)).isEqualTo(0)
+    Truth.assertThat(part2(testInput)).isEqualTo(0)
 
     val input = readInput("Day00")
     println(part1(input))
