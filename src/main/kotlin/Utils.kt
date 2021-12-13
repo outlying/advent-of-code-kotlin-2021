@@ -10,7 +10,7 @@ fun Array<IntArray>.print(replaceWith: (Int) -> Any = { it }) {
     for(x in 0 until size){
         for(y in 0 until get(0).size) {
             builder.append(replaceWith.invoke(get(x)[y]))
-            builder.append("\t")
+            //builder.append("\t")
         }
         builder.append("\n")
     }
