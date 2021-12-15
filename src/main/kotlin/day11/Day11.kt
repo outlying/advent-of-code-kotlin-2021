@@ -1,70 +1,104 @@
 package day11
 
 import com.google.common.truth.Truth
-import print
 import readInput
 import kotlin.math.max
 import kotlin.math.min
 
 fun main() {
 
-    class Octopus(matrix: Array<Array<Octopus>>, initValue: Int)
+    class Octopus(private val position: Pair<Int, Int>, initValue: Int) {
 
-    fun parse(input: List<String>): Array<IntArray> {
+        private var _value: Int = initValue
+        val value: Int
+            get() = _value
 
-        return input.map { line -> line.map { it.digitToInt() }.toIntArray() }.toTypedArray()
-    }
+        private var flashed = false
 
-    fun getNeighbours(matrix: Array<IntArray>, position: Pair<Int, Int>): Set<Pair<Int, Int>> {
-        val result: MutableSet<Pair<Int, Int>> = mutableSetOf()
-        val (x, y) = position
+        lateinit var matrix: Array<Array<Octopus>>
 
-        for (yN in max(y - 1, 0)..min(y + 1, matrix[0].lastIndex)) {
-            for (xN in max(x - 1, 0)..min(x + 1, matrix[0].lastIndex)) {
-                result.add(xN to yN)
+        fun increase(withFlash: Boolean) {
+            _value += 1
+            if (withFlash) {
+                flash()
+            } else {
+                flashed = false
             }
         }
 
-        return result.minus(position)
-    }
-
-    fun modifyPointValues(matrix: Array<IntArray>, points: Collection<Pair<Int, Int>>, block: (Int) -> Int) {
-        for (point in points) {
-            val (x, y) = point
-            matrix[y][x] = block(matrix[y][x])
-        }
-    }
-
-    fun step(matrix: Array<IntArray>) {
-        for (y in matrix.indices) {
-            for (x in matrix[0].indices) {
-                matrix[y][x] = matrix[y][x] + 1
+        fun flash() {
+            if (_value > 9 && !flashed) {
+                flashed = true
+                getNeighbours().map { (x, y) -> matrix[y][x].increase(withFlash = true) }
             }
         }
 
-        for (y in matrix.indices) {
-            for (x in matrix[0].indices) {
-                if (matrix[y][x] > 9) {
-                    val neighbours = getNeighbours(matrix, x to y)
-                    modifyPointValues(matrix, neighbours) { it + 1 }
+        fun reset() {
+            if (flashed) {
+                _value = 0
+                flashed = false
+            }
+        }
+
+        private fun getNeighbours(): Set<Pair<Int, Int>> {
+            val result: MutableSet<Pair<Int, Int>> = mutableSetOf()
+            val (x, y) = position
+
+            for (yN in max(y - 1, 0)..min(y + 1, matrix[0].lastIndex)) {
+                for (xN in max(x - 1, 0)..min(x + 1, matrix[0].lastIndex)) {
+                    result.add(xN to yN)
                 }
             }
+
+            return result.minus(position)
+        }
+
+        override fun toString(): String {
+            return value.toString()
+        }
+    }
+
+    fun parse(input: List<String>): Array<Array<Octopus>> {
+
+        val matrix = input
+            .mapIndexed { y, line ->
+                line.mapIndexed { x, char -> Octopus(x to y, char.digitToInt()) }.toTypedArray()
+            }.toTypedArray()
+
+        for (y in matrix.indices) {
+            for (x in matrix[0].indices) {
+                matrix[y][x].matrix = matrix
+            }
+        }
+
+        return matrix
+    }
+
+    fun step(matrix: Array<Array<Octopus>>) {
+        for (y in matrix.indices) {
+            for (x in matrix[0].indices) {
+                matrix[y][x].increase(withFlash = false)
+            }
         }
 
         for (y in matrix.indices) {
             for (x in matrix[0].indices) {
-                if (matrix[y][x] > 9) {
-                    matrix[y][x] = 0
-                }
+                matrix[y][x].flash()
+            }
+        }
+
+        for (y in matrix.indices) {
+            for (x in matrix[0].indices) {
+                matrix[y][x].reset()
             }
         }
     }
 
-    fun countZeroes(matrix: Array<IntArray>): Int {
+    fun countZeroes(matrix: Array<Array<Octopus>>): Int {
         var sum = 0
         for (y in matrix.indices) {
             for (x in matrix[0].indices) {
-                if (matrix[y][x] > 0) {
+                if (matrix[y][x].value == 0) {
                     sum += 1
                 }
             }
@@ -77,11 +111,8 @@ fun main() {
         val matrix = parse(input)
         var flashes = 0
 
-        matrix.print()
-
-        for(i in 0..1) {
+        for (i in 1..100) {
             step(matrix)
-            matrix.print()
             flashes += countZeroes(matrix)
         }
 
@@ -89,12 +120,20 @@ fun main() {
     }
 
     fun part2(input: List<String>): Int {
-        return 0
+        val matrix = parse(input)
+        var step = 0
+
+        do {
+            step += 1
+            step(matrix)
+        } while (countZeroes(matrix) != 100)
+
+        return step
     }
 
     val testInput = readInput("Day11_test")
     Truth.assertThat(part1(testInput)).isEqualTo(1656)
-    Truth.assertThat(part2(testInput)).isEqualTo(0)
+    Truth.assertThat(part2(testInput)).isEqualTo(195)
 
     val input = readInput("Day11")
     println(part1(input))

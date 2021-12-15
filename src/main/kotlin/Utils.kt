@@ -2,19 +2,47 @@ import java.io.File
 import java.math.BigInteger
 import java.security.MessageDigest
 
+fun <T> T.println(prefix: String = "") = kotlin.io.println("$prefix$this")
 
 fun Array<IntArray>.print(replaceWith: (Int) -> Any = { it }) {
 
     val builder = StringBuilder()
 
-    for(x in 0 until size){
-        for(y in 0 until get(0).size) {
+    for (x in 0 until size) {
+        for (y in 0 until get(0).size) {
             builder.append(replaceWith.invoke(get(x)[y]))
             //builder.append("\t")
         }
         builder.append("\n")
     }
 
+    println(builder)
+}
+
+fun <T> Array<Array<T>>.print() {
+
+    val builder = StringBuilder()
+
+    for (x in 0 until size) {
+        for (y in 0 until get(0).size) {
+            builder.append(get(x)[y])
+            builder.append("\t")
+        }
+        builder.append("\n")
+    }
+    println(builder)
+}
+
+fun Array<BooleanArray>.print() {
+
+    val builder = StringBuilder()
+
+    for (x in 0 until size) {
+        for (y in 0 until get(0).size) {
+            builder.append(if (get(x)[y]) "#" else ".")
+        }
+        builder.append("\n")
+    }
     println(builder)
 }
 
