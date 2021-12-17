@@ -3,34 +3,40 @@ package day16
 object Transmission {
 
     fun buildPackets(input: String): Packet {
-
         val binaryString = input.map { map[it] }.joinToString(separator = "")
+        return buildPacketsFromBinary(binaryString)
+    }
 
-        val version = binaryString.substring(0, 3).toInt(2)
+    fun buildPacketsFromBinary(binaryString: String): Packet {
+
+        val version = try {
+            binaryString.substring(0, 3).toInt(2)
+        } catch (e: Exception) {
+            throw IllegalStateException("Failed version for $binaryString", e)
+        }
+
         when (val type = binaryString.substring(3, 6).toInt(2)) {
             4 -> {
-
-                var lastFound = false
 
                 val windows = binaryString
                     .drop(6)
                     .windowed(5, 5, false)
-                    .takeWhile {
-                        val isLastGroup = it[0] == '0'
 
-                        if (!isLastGroup) {
-                            true
-                        } else {
-                            if (lastFound) {
-                                false
-                            } else {
-                                lastFound = true
-                                true
-                            }
-                        }
+                val filteredWindows = mutableListOf<String>()
+                var i = 0
+                do {
+                    var lastNotFound = true
+                    val window = windows[i]
+
+                    if (window[0] == '0') {
+                        lastNotFound = false
                     }
 
-                val literal = windows.map { it.drop(1) }.joinToString("").toInt(2)
+                    filteredWindows.add(window)
+                    i += 1
+                } while (lastNotFound)
+
+                val literal = filteredWindows.map { it.drop(1) }.joinToString("").toLong(2)
 
                 return PacketLiteral(
                     version,
@@ -39,7 +45,64 @@ object Transmission {
                 )
             }
             else -> {
-                TODO("Operator")
+
+                val subpackets = mutableListOf<Packet>()
+                val lengthTypeId = "${binaryString[6]}".toInt()
+
+                var value = 0
+
+                when (lengthTypeId) {
+                    0 -> {
+                        val subpacketsTotalLength = binaryString.substring(7, 22).toInt(2) // l:15
+                        value = subpacketsTotalLength
+                        var subpacketsFragment = binaryString.substring(22, 22 + subpacketsTotalLength)
+
+                        var countedSumPackageLength = 0
+
+                        while (countedSumPackageLength != subpacketsTotalLength) {
+                            val packet = try {
+                                buildPacketsFromBinary(subpacketsFragment)
+                            } catch (e: Exception) {
+                                throw IllegalStateException("Failed while building subpacket for $binaryString", e)
+                            }
+                            subpackets.add(packet)
+                            val packetLength = packet.toString().length
+                            countedSumPackageLength += packetLength
+                            subpacketsFragment = subpacketsFragment.drop(packetLength)
+                        }
+                    }
+                    1 -> {
+
+                        val subpacketsCount = binaryString.substring(7, 18).toInt(2) // l:11
+                        value = subpacketsCount
+                        var subpacketsFragment = binaryString.drop(18)
+
+                        for (i in 0 until subpacketsCount) {
+                            val packet = try {
+                                buildPacketsFromBinary(subpacketsFragment)
+                            } catch (e: Exception) {
+                                throw IllegalStateException(
+                                    "Failed while building subpacket index $i (total: $subpacketsCount) for $binaryString",
+                                    e
+                                )
+                            }
+
+                            subpackets.add(packet)
+                            val packetString = packet.toString()
+                            subpacketsFragment = subpacketsFragment.drop(packetString.length)
+                        }
+                    }
+
+                    else -> throw IllegalStateException("Incorrect length type ID $lengthTypeId")
+                }
+
+                return PacketOperator(
+                    version = version,
+                    type = type,
+                    lengthTypeID = lengthTypeId,
+                    value = value,
+                    packets = subpackets,
+                )
             }
         }
     }
